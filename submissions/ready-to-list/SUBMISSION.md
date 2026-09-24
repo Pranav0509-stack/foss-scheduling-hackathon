@@ -81,7 +81,7 @@ List only the hearings that will actually happen and move the case forward, pack
 | Cases disposed in 60 days | 260 | 362 (+39%) |
 | Wasted listings (trips for nothing) | 2,537 | 392 (-85%) |
 
-With your 420-minute day (`outputs/capacity_420/`): 12.9 against 16.9 substantive hearings a day, 453 against 304 disposed, substantiveness 33% against 65%.
+With your 420-minute day (`outputs/capacity_420/`), today against Ready-to-List: 12.9 against 16.9 substantive hearings a day, 304 against 453 disposed, substantiveness 33% against 65%.
 
 **Which lever does what** (switch one off at a time; the two halves alone):
 
