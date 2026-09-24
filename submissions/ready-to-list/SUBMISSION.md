@@ -29,7 +29,7 @@ List only the hearings that will actually happen and move the case forward, pack
 
 **Core logic (`core/pucar_engine.py`):**
 
-1. **Truth model.** A hearing of type T is substantive with the real probability p(T). If not, it fails for a reason drawn from the real reason mix for T. "Awaiting process" is a state that persists until the process comes back, not a coin flip. The last hearing's note raises the matching risk (x2.5), normalised so each type's average stays at the real rate. Check: under today's rules, with nothing tuned to match, the model gives 60 listed, 26 reached and 12.5 substantive a day, close to the case study's 60 / 20 / 10.
+1. **Truth model.** A hearing of type T is substantive with the real probability p(T). If not, it fails for a reason drawn from the real reason mix for T. "Awaiting process" is a state that persists until the process comes back, not a coin flip. The last hearing's note raises the matching risk (x2.5), normalised so each type's average stays at the real rate. Check: under today's rules, with nothing tuned to match, the model gives 57 listed, 25 reached and 12.0 substantive a day, close to the case study's 60 / 20 / 10.
 2. **Readiness levers:**
    - **Process tracking:** list a case only once its summons or warrant is back (status known 90% of the time).
    - **T-2 intent check:** half of the "not ready" failures surface before listing.
@@ -71,49 +71,49 @@ List only the hearings that will actually happen and move the case forward, pack
 
 ## 5. Results
 
-**A. The judge's full docket, 60 working days.** 3,000 cases (your generator, seed 42) from 1 Oct 2026, 330 court minutes a day, averaged over 5 seeds (`outputs/results.md`):
+**A. The judge's full docket, 60 working days.** 3,000 cases (your generator, seed 42) from 1 Oct 2026, 330 court minutes a day, three of them judge-leave days, averaged over 5 seeds (`outputs/results.md`):
 
 | Metric (case study) | Today's rules | Samay |
 |---|---|---|
-| Utilisation: court minutes used | 99.3% | 99.6% |
+| Utilisation: court minutes used | 94% | 95% |
 | Reach rate: scheduled cases the court gets to | 44% | 97% |
-| Substantiveness: reached hearings that move the case | 47% | 82% |
-| Backlog-age impact: 4+ year cases heard at least once | 29% | 49% |
-| Predictability: days from first listing to the hearing that moved it | 24 | 3 |
+| Substantiveness: reached hearings that move the case | 48% | 79% |
+| Backlog-age impact: 4+ year cases heard at least once | 32% | 47% |
+| Predictability: days from first listing to the hearing that moved it | 23 | 2 |
 | Next-date gap, days | 60 (flat) | 14 (purpose-based) |
-| Substantive hearings a day | 12.5 | 14.6 (+17%) |
-| Cases disposed in 60 days | 191 | 368 (+93%) |
-| Wasted listings (trips for nothing) | 2,851 | 220 (-92%) |
+| Substantive hearings a day | 12.0 | 13.9 (+16%) |
+| Cases disposed in 60 days | 196 | 356 (+82%) |
+| Wasted listings (trips for nothing) | 2,694 | 259 (-90%) |
 
-With your 420-minute day (`outputs/capacity_420/`), today against Samay: 15.9 against 19.2 substantive hearings a day, 235 against 486 disposed.
+With your 420-minute day (`outputs/capacity_420/`), today against Samay: 15.2 against 17.6 substantive hearings a day, 230 against 465 disposed, substantiveness 47% against 82%.
 
 **Which lever does what** (one switched off at a time, and the halves alone):
 
 | Configuration | Substantive a day | Moves the case | Wasted listings | Disposed |
 |---|---|---|---|---|
-| Samay, everything on | 14.6 | 82% | 220 | 368 |
-| Scheduling only: registry packing and next dates, no party input | 13.5 | 66% | 464 | 343 |
-| Scheduling only + fixed slots and clustering | 13.9 | 73% | 360 | 358 |
-| Readiness levers only (no optimiser) | 13.8 | 64% | 2,768 | 152 |
-| Without reading the last hearing's note | 13.8 | 78% | 266 | 321 |
-| Without the pre-filing check | 14.5 | 81% | 233 | 364 |
+| Samay, everything on | 13.9 | 79% | 259 | 356 |
+| Scheduling only: registry packing and next dates, no party input | 13.1 | 65% | 463 | 329 |
+| Scheduling only + fixed slots and clustering | 13.4 | 67% | 439 | 346 |
+| Readiness levers only (no optimiser) | 12.9 | 63% | 2,645 | 136 |
+| Without reading the last hearing's note | 13.4 | 72% | 335 | 317 |
+| Without the pre-filing check | 13.8 | 79% | 263 | 360 |
 
-Scheduling alone, which needs only the registry's own data, delivers most of the gain.
+Scheduling alone, which needs only the registry's own data, delivers most of the disposals; the readiness levers raise how often a heard case moves forward and cut wasted listings further.
 
 **B. One judge for a year, the 100 real cases inside it, new complaints arriving** (`outputs/one_judge_year.md`, 250 working days, 3 seeds, about 2.5 new complaints a day). This is where pre-filing shows: 96 of your 100 cases went through Delay Condonation hearings (3.37 hearings per case, 29% substantive). When the registry computes limitation at e-filing and the condonation petition is heard with admission, new complaints stop stalling there.
 
 | Over a year | Today's rules | Scheduling only | Scheduling + pre-filing | Samay (all) |
 |---|---|---|---|---|
-| Cases disposed | 524 | 639 | 639 | 864 |
-| Of the 100 real cases | 16 | 21 | 21 | 29 |
-| New complaints past cognizance within the year | 3% | 4% | 89% | 79% |
-| Delay condonation listings | 455 | 175 | 85 | 85 |
-| Substantive hearings a day | 12.6 | 14.1 | 14.1 | 15.0 |
-| Wasted listings | 11,851 | 3,216 | 3,116 | 1,597 |
+| Cases disposed | 541 | 643 | 644 | 847 |
+| Of the 100 real cases | 18 | 21 | 21 | 28 |
+| New complaints past cognizance within the year | 3% | 32% | 91% | 92% |
+| Delay condonation listings | 407 | 290 | 20 | 9 |
+| Substantive hearings a day | 12.4 | 13.4 | 12.7 | 14.5 |
+| Wasted listings | 11,708 | 3,913 | 3,939 | 1,958 |
 
 **The prototype** (`app.py`): sign in as Judge or Court master; nothing else in the sidebar. The court master uploads the judge's docket (Excel or CSV; `docs/Samay_docket_Justice_Sehgal.xlsx` is your 100-case roster as a sheet), runs the day by recording each outcome, and scrutinises new complaints at e-filing. The judge sees Today's list (time, listing number, score, advocate, why today; remove; approve), Docket (every case with score, status, flags and history), Priority (the five weights, adjustable with age never below 20), Calendar (holidays, leave, load), Results (the five measures against today's rules, success by listing number), and How Samay decides (the model, the score and the day-building steps). Pages are fixed to the screen; tables scroll in their own frames.
 
-**Listing number.** The data shows the same purpose is listed many times (Warrant 5.0 hearings per case, Evidence complainant 6.8). The prototype tracks how many times a case has been listed for its current purpose: a 1st listing is planned normally; a 2nd listing carries a priority boost and a readiness check; a deferred case (3rd or later) is held until the reason for its last failure is cured (a warrant not back is never relisted blind), then listed with priority and a fixed slot. In the quarter run, deferred cases moved forward 45% of the time under Samay, against 24% for second listings under today's rules. Rules in `config/pucar.yaml` under `escalation`.
+**Listing number.** The data shows the same purpose is listed many times (Warrant 5.0 hearings per case, Evidence complainant 6.8). The prototype tracks how many times a case has been listed for its current purpose: a 1st listing is planned normally; a 2nd listing carries a priority boost and a readiness check; a deferred case (3rd or later) is held until the reason for its last failure is cured (a warrant not back is never relisted blind), then listed with priority and a fixed slot.  Rules in `config/pucar.yaml` under `escalation`.
 
 **Calendar.** Your `court_calendar.csv` is used as given for the scored runs. One finding for you: its holiday names ("Janmashtami (Shravan Vad-8)", Samvatsari, Vikram Samvat New Year) are Gujarat's General Administration Department naming and match the Gujarat Gazette list for 2026, not Kerala's. For the Kerala demo court we also loaded the official High Court of Kerala 2026 calendar (210 sitting days; Sep to Dec holidays: 4 Sep, 21 Sep, 2 Oct, 20 and 21 Oct, 25 Dec; HC non-sitting 19 Oct and 9 Nov; Christmas vacation 24 to 31 Dec; second Saturdays closed) in `config/calendar.yaml`, with the source URL. Note 5 of that calendar says vacations apply to the High Court and civil courts; magistrate courts, where these cheque cases sit, keep sitting.
 
@@ -130,7 +130,7 @@ Scheduling alone, which needs only the registry's own data, delivers most of the
 - **Case file:** each of the 100 real cases, with hearings held per stage, the last note and the signals read from it, and its simulated next year under both approaches.
 - **Plan by day, week, month or year:** the cause list with time windows; the week board by hearing type; the month's listed and moved hearings; the year's cumulative disposals and where pending cases stand.
 
-**Against the default.** "Whatever is listed gets attempted, 60-day gap" lists 60 a day and reaches 44% of them. Samay lists about 18, reaches 97%, and hears more of them substantively.
+**Against the default.** "Whatever is listed gets attempted, 60-day gap" lists 57 a day and reaches 44% of them. Samay lists about 18, reaches 97%, and hears more of them substantively.
 
 ## 6. Specs for integration
 
