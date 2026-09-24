@@ -27,7 +27,7 @@ List only the hearings that will actually happen and move the case forward, pack
 
 **Core logic (`core/pucar_engine.py`):**
 
-1. **Truth model.** A hearing of type T is substantive with the real probability p(T). If not, it fails for a reason drawn from the real reason mix for T. "Awaiting process" is a state that persists until the process comes back, not a coin flip. The last hearing's note raises the matching risk (x2.5), normalised so each type's average stays at the real rate. Check: under today's rules, with nothing tuned to match, the model gives 53 listed, 30 reached and 10.5 substantive a day, close to the case study's 60 / 20 / 10.
+1. **Truth model.** A hearing of type T is substantive with the real probability p(T). If not, it fails for a reason drawn from the real reason mix for T. "Awaiting process" is a state that persists until the process comes back, not a coin flip. The last hearing's note raises the matching risk (x2.5), normalised so each type's average stays at the real rate. Check: under today's rules, with nothing tuned to match, the model gives 60 listed, 26 reached and 12.5 substantive a day, close to the case study's 60 / 20 / 10.
 2. **Readiness levers:**
    - **Process tracking:** list a case only once its summons or warrant is back (status known 90% of the time).
    - **T-2 intent check:** half of the "not ready" failures surface before listing.
@@ -67,44 +67,60 @@ List only the hearings that will actually happen and move the case forward, pack
 
 ## 5. Results
 
-3,000 cases (your generator, seed 42) over 60 working days from 1 Oct 2026, 330 court minutes a day, averaged over 5 seeds (`outputs/results.md`):
+**A. The judge's full docket, 60 working days.** 3,000 cases (your generator, seed 42) from 1 Oct 2026, 330 court minutes a day, averaged over 5 seeds (`outputs/results.md`):
 
 | Metric (case study) | Today's rules | Ready-to-List |
 |---|---|---|
-| Utilisation: court minutes used | 98% | 99% |
-| Reach rate: scheduled cases the court gets to | 58% | 98% |
-| Substantiveness: reached hearings that move the case | 34% | 69% |
-| Backlog-age impact: 4+ year cases heard at least once | 37% | 44% |
-| Predictability: days from first listing to the hearing that moved it | 29 | 8 |
-| Next-date gap, days | 60 (flat) | 13 (purpose-based) |
-| Substantive hearings a day | 10.5 | 14.0 (+33%) |
-| Cases disposed in 60 days | 260 | 362 (+39%) |
-| Wasted listings (trips for nothing) | 2,537 | 392 (-85%) |
+| Utilisation: court minutes used | 99.3% | 99.6% |
+| Reach rate: scheduled cases the court gets to | 44% | 97% |
+| Substantiveness: reached hearings that move the case | 47% | 82% |
+| Backlog-age impact: 4+ year cases heard at least once | 29% | 49% |
+| Predictability: days from first listing to the hearing that moved it | 24 | 3 |
+| Next-date gap, days | 60 (flat) | 14 (purpose-based) |
+| Substantive hearings a day | 12.5 | 14.6 (+17%) |
+| Cases disposed in 60 days | 191 | 368 (+93%) |
+| Wasted listings (trips for nothing) | 2,851 | 220 (-92%) |
 
-With your 420-minute day (`outputs/capacity_420/`), today against Ready-to-List: 12.9 against 16.9 substantive hearings a day, 304 against 453 disposed, substantiveness 33% against 65%.
+With your 420-minute day (`outputs/capacity_420/`), today against Ready-to-List: 15.9 against 19.2 substantive hearings a day, 235 against 486 disposed.
 
-**Which lever does what** (switch one off at a time; the two halves alone):
+**Which lever does what** (one switched off at a time, and the halves alone):
 
-| Configuration | Substantive a day | Substantiveness | Wasted listings |
-|---|---|---|---|
-| Ready-to-List, everything on | 14.0 | 69% | 392 |
-| Readiness levers only (no optimiser) | 12.0 | 46% | 2,450 |
-| Scheduling only: registry packing and next dates, no party input | 12.4 | 53% | 678 |
-| Scheduling only + fixed slots and clustering | 13.1 | 61% | 525 |
-| Without fixed slot and clustering | 13.3 | 61% | 520 |
-| Without reading the last hearing's note | 13.5 | 67% | 420 |
-| Without process tracking | 13.6 | 68% | 412 |
+| Configuration | Substantive a day | Moves the case | Wasted listings | Disposed |
+|---|---|---|---|---|
+| Ready-to-List, everything on | 14.6 | 82% | 220 | 368 |
+| Scheduling only: registry packing and next dates, no party input | 13.5 | 66% | 464 | 343 |
+| Scheduling only + fixed slots and clustering | 13.9 | 73% | 360 | 358 |
+| Readiness levers only (no optimiser) | 13.8 | 64% | 2,768 | 152 |
+| Without reading the last hearing's note | 13.8 | 78% | 266 | 321 |
+| Without the pre-filing check | 14.5 | 81% | 233 | 364 |
 
-Scheduling alone, which needs only the registry's own data, delivers about three quarters of the gain (12.4 to 13.1 a day, the same disposals). Readiness information takes it to 14.0. There is no pre-filing check in this district-court data, so readiness is established differently: from the process status, the intent check and the last hearing's note. Those do the job a pre-filing check does in a High Court filing.
+Scheduling alone, which needs only the registry's own data, delivers most of the gain.
 
-**Visualisation.** The judge sees the day as a timeline by sitting, with the reason each case was listed. Adding or removing a case shows the impact before approval. The docket-health tab shows ageing buckets, repeat adjournments and a 4-week load forecast. The page "On the organisers' data" shows the lever chart, day-by-day series, the proposed cause list, and why hearings fail per type from your data. The decision it supports: whether to list a case today or wait for its process, and what an override costs.
+**B. One judge for a year, the 100 real cases inside it, new complaints arriving** (`outputs/one_judge_year.md`, 250 working days, 3 seeds, about 2.5 new complaints a day). This is where pre-filing shows: 96 of your 100 cases went through Delay Condonation hearings (3.37 hearings per case, 29% substantive). When the registry computes limitation at e-filing and the condonation petition is heard with admission, new complaints stop stalling there.
 
-**Against the default.** "Whatever is listed gets attempted, 60-day gap" lists about 53 a day and reaches 58% of them. Ready-to-List lists about 20, reaches 98%, and hears more of them substantively, because it does not list cases whose warrant is not back, groups advocates and types, and fits the list to the minutes.
+| Over a year | Today's rules | Scheduling only | Scheduling + pre-filing | Ready-to-List (all) |
+|---|---|---|---|---|
+| Cases disposed | 524 | 639 | 639 | 864 |
+| Of the 100 real cases | 16 | 21 | 21 | 29 |
+| New complaints past cognizance within the year | 3% | 4% | 89% | 79% |
+| Delay condonation listings | 455 | 175 | 85 | 85 |
+| Substantive hearings a day | 12.6 | 14.1 | 14.1 | 15.0 |
+| Wasted listings | 11,851 | 3,216 | 3,116 | 1,597 |
+
+**Visualisation and workflow** (Streamlit app, page "Justice Sehgal's docket"):
+- **The data:** every file and column, with the key findings (`docs/DATA_PROFILE.md`).
+- **Registry intake:** the manual scrutiny of an NI Act s.138 complaint as structured e-filing fields. Statutory dates are computed (cheque validity, 30-day notice, 15 days to pay, one month from cause of action), with documents, summons details and jurisdiction (s.225 enquiry). Nothing is refused; the result says what to cure (`config/registry_ni138.yaml`, `core/registry.py`).
+- **Lifecycle:** the stage graph derived from your data, with cases now at each stage, P(substantive), minutes and hearings per case.
+- **Case file:** each of the 100 real cases, with hearings held per stage, the last note and the signals read from it, and its simulated next year under both approaches.
+- **Plan by day, week, month or year:** the cause list with time windows; the week board by hearing type; the month's listed and moved hearings; the year's cumulative disposals and where pending cases stand.
+
+**Against the default.** "Whatever is listed gets attempted, 60-day gap" lists 60 a day and reaches 44% of them. Ready-to-List lists about 18, reaches 97%, and hears more of them substantively.
 
 ## 6. Specs for integration
 
 - **Input schema:** exactly your CSVs, unchanged. `core/pucar_engine.load(data_dir, roster=...)` reads them. The hearing-type names from your files are normalised to upper case with underscores.
 - **Output:** `outputs/proposed_schedule.csv` with columns `date, block, expected_start, window, case_number, hearing_type, advocate_id, from_waitlist, p_substantive_planned, simulated_outcome`, plus `results.csv` and `daily.csv`. `simulated_outcome` exists only in simulation; drop it in production.
+- **Scaling to every court and judge:** the unit is one judge's docket. `judge_docket()` builds it, `simulate()` plans it, and each court's rules (sitting blocks, hearing-type flow, priorities, registry checks) live in YAML (`config/pucar.yaml`, `config/registry_ni138.yaml`). Another bench is another docket and config, with no code change. Advocates shared across benches are handled by the multi-court planner in `core/optimize.py`, which never lists one advocate in two courtrooms at once.
 - **Interfaces:** a Python module (`core/pucar_engine.py`), a CLI (`scripts/run_pucar.py`) and a Streamlit app (`app.py`). A DRISTI integration would call `simulate` or the day planner nightly and write the cause list plus a reason per item.
 - **Dependencies:** Python 3.11+, pandas, numpy, OR-Tools (CP-SAT, SCIP), scikit-learn, PyYAML, Streamlit, Plotly, PyMuPDF, tabulate. No external services and no LLM calls.
 - **Stubbed vs real:**
@@ -126,6 +142,10 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 # Score on your data (3,000 cases, 60 days, 330-minute day; add --capacity 420 for the README's day)
 .venv/bin/python -m scripts.run_pucar --out outputs
+# One judge for a year: the 100 real cases inside the docket, new complaints arriving, with and without pre-filing
+.venv/bin/python -m scripts.run_one_judge --out outputs
+# Profile every data file and column
+.venv/bin/python -m scripts.data_profile
 # The full app (judge, court master, calendar, simulator, organisers' data page)
 .venv/bin/streamlit run app.py
 ```
