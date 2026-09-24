@@ -1,0 +1,76 @@
+# Ready-to-List
+
+Cause-list and hearing-day tools for the judge and the court master. The AI recommends and the judge decides.
+
+"We never say no to a litigant. We just stop listing hearings that were never going to happen."
+
+Built for "Scheduling Justice", the PUCAR hackathon at FOSS United Week. The hackathon manual is the source of truth; the team's build bible maps every feature to it (see `docs/BIBLE.md`).
+
+## Run
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/streamlit run app.py
+```
+
+The first run builds `data/court.db`: a synthetic court with 3 benches, 2,700 pending cases and 150 advocates. To load the organisers' CSVs instead, put them in `data/raw/` and edit `COLUMN_MAP` in `core/data.py`. Nothing else changes. The sidebar has a "Reset demo data" button.
+
+## Screens
+
+| Screen | For | What it does |
+|---|---|---|
+| Full flow, one case | Panel | A dummy writ petition from filing, defect check and re-upload, through planning, approval and the hearing, to its next date |
+| Court calendar | Judge, registry | The year's sitting days, a fortnight heatmap for all three courts, each day's timeline across courtrooms, every case's day, time and reason |
+| Pre-filing check | Advocate | Defects with page and fix, a queue card (submit now vs fix first); submit anyway is never disabled |
+| Case types and judge time | Judge, panel | The 10 types and sub-types, minutes per hearing with evidence, cost-of-waiting curves, where the judge's minutes go, what the judge checks |
+| Optimisation lab | Panel | Solve with greedy, MILP, CP-SAT or stochastic CP-SAT; every combination compared; which method when |
+| Judge dashboard | Judge | KPIs, a timeline of the day by block, a reason for each listing, override with a live impact meter, Approve. Config tab with locked rules. Docket health tab. Case drawer with the summary cover sheet. |
+| Court master | Court master | One-tap outcome (effective / heard, not effective / adjourned + reason code), live ETAs, next-date suggestion with the reason, Confirm or Change. |
+| Simulator | Panel | 60 days of today's rules vs Ready-to-List, same roster and seed, with the five judging metrics. |
+| Model accuracy | Panel | Time-based holdout, calibration, backtest of real cause lists, learning curve. |
+| Audit log | Everyone | Every AI decision and every human override. |
+
+## Core services (`core/`)
+
+| Module | Function | Does |
+|---|---|---|
+| `readiness.py` | `case_frame`, `readiness`, `run_nudges` | Score 0-100 (filing 30, prerequisites 40, counsel confirmed 20, summary verified 10), state, priority, T-2 intent check |
+| `predict.py` | `Predictor.predict` | Logistic regression for P(show) and P(effective), trained on past hearings; expected minutes |
+| `scheduler.py` | `build_causelist`, `impact`, `approve` | Urgent bypass, then the ageing quota, then a CP-SAT knapsack per block (priority × P(effective), filled to 95%), advocate clustering into 1-hour windows, waitlist |
+| `nextdate.py` | `next_date`, `record_outcome`, `confirm_next_date` | today + max(ideal gap, prerequisite time), then the first day with capacity, skipping holidays, the judge's leave and the advocate's other listings |
+| `simulate.py` | `run`, `summary` | Agent simulation (diligent / busy / chronic adjourner advocates) |
+| `summary.py` | `summarise` | Cover sheet for old cases. The LLM output is cached for the demo |
+| `optimize.py` | `build_instance`, `solve`, `sequence_day`, `evaluate`, `plan_horizon` | Stage 1 picks the day for every case in all courts (MILP or CP-SAT); stage 2 sets the time with CP-SAT interval scheduling; Monte Carlo scoring |
+| `taxonomy.py` | `median_minutes`, `waiting_cost`, `day_budget`, `sequence_with_changeovers` | 10 case types and sub-types: hearing minutes by stage, cost of waiting over time, the judge's minute budget, grouping similar cases |
+| `defects.py` | `check_filing`, `queue_position`, `submit_filing`, `refile` | Rules-based pre-filing check driven by `config/defect_rules.yaml` |
+| `evaluate.py` | `holdout`, `backtest_causelists`, `learning_curve` | Model accuracy against naive baselines |
+
+Nothing is hardcoded: judge styles and the hearing-type table are in `config/judge_rules.yaml`, people's behaviour in `config/model.yaml`, objective weights in `config/optimizer.yaml`, the court calendar in `config/calendar.yaml`, defect rules in `config/defect_rules.yaml`, case types in `config/case_taxonomy.yaml`.
+
+Locked rules in `config/judge_rules.yaml` (the UI can't turn them off): the 25% ageing quota for 5+ year cases, the urgent bypass for bail, habeas corpus and stay, and the readiness gate of 60.
+
+## Results so far (synthetic court, 60 working days, default settings)
+
+The simulated baseline is calibrated to the manual's case study: about 60 listed, 20 heard and 10 effective a day.
+
+| Judge | Effective hearings a day | Cases disposed | Change in 5+ year cases | Listed cases heard |
+|---|---|---|---|---|
+| Sehgal | 8.5 today, 19.3 ours | 15 today, 59 ours | +23 today, -24 ours | 24% today, 72% ours |
+| Dimakar | 10.8 today, 21.9 ours | 58 today, 68 ours | -24 today, -39 ours | 31% today, 76% ours |
+| Joshi | 12.2 today, 31.6 ours | 17 today, 45 ours | +21 today, -10 ours | 38% today, 74% ours |
+
+Model accuracy on a time-based holdout (6,402 train, 2,134 test hearings):
+
+| Check | Ours | Naive baseline |
+|---|---|---|
+| P(show) AUC / Brier | 0.77 / 0.196 | 0.50 / 0.250 |
+| P(effective given heard) AUC / Brier | 0.85 / 0.142 | 0.50 / 0.245 |
+| Hearing length, mean absolute error | 5.5 min (case taxonomy) | 11.8 min (purpose-only reference table) |
+| Heard per cause list, backtest error | 1.9 hearings (10.7%) | |
+
+## Honest notes
+
+- Every number above comes from synthetic data. Re-run the simulator and the Model accuracy page on the organisers' data before quoting them.
+- Minutes per case type are estimates anchored on official judge-unit norms (see `config/case_taxonomy.yaml` sources) until fitted to the organisers' data.
+- In production the summary model runs self-hosted on court servers (Kerala HC AI policy).
