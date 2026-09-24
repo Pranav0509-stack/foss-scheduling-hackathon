@@ -107,6 +107,8 @@ Scheduling alone, which needs only the registry's own data, delivers most of the
 | Substantive hearings a day | 12.6 | 14.1 | 14.1 | 15.0 |
 | Wasted listings | 11,851 | 3,216 | 3,116 | 1,597 |
 
+**Start here** (the app's first page): upload the docket file from this repo (`data/roster_sample_100.csv`, or the same columns as an Excel sheet). The app checks the columns and explains any problem in plain words. It then shows what is in the docket, reads each case's readiness from its last hearing note, plans the next week to year with time windows, and compares the results with today's rules. The pitch deck is `docs/presentation.html`: open it in a browser and use the arrow keys.
+
 **Visualisation and workflow** (Streamlit app, page "Justice Sehgal's docket"):
 - **The data:** every file and column, with the key findings (`docs/DATA_PROFILE.md`).
 - **Registry intake:** the manual scrutiny of an NI Act s.138 complaint as structured e-filing fields. Statutory dates are computed (cheque validity, 30-day notice, 15 days to pay, one month from cause of action), with documents, summons details and jurisdiction (s.225 enquiry). Nothing is refused; the result says what to cure (`config/registry_ni138.yaml`, `core/registry.py`).
@@ -146,7 +148,7 @@ python3 -m venv .venv
 .venv/bin/python -m scripts.run_one_judge --out outputs
 # Profile every data file and column
 .venv/bin/python -m scripts.data_profile
-# The full app (judge, court master, calendar, simulator, organisers' data page)
+# The full app: start at 'Start here: plan a docket' and upload data/roster_sample_100.csv
 .venv/bin/streamlit run app.py
 ```
 
