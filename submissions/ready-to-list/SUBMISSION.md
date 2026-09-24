@@ -1,5 +1,7 @@
 # Submission: ready-to-list
 
+Product name: **Samay**. Team and folder name: ready-to-list.
+
 ## 1. Team
 
 - **Team / solo name:** ready-to-list
@@ -33,10 +35,11 @@ List only the hearings that will actually happen and move the case forward, pack
    - **T-2 intent check:** half of the "not ready" failures surface before listing.
    - **Fixed slot and advocate clustering:** a third fewer absences.
    - **Reading the last hearing's note** when ranking.
-3. **Optimiser.** CP-SAT knapsack per sitting. Value = priority x P(substantive) x minutes^0.75, so the ratio per minute favours likely, short hearings without starving long arguments and judgments. Capacity is 95% of the net minutes, with a same-day waitlist. Bail goes first; the ageing quota is locked.
-4. **Next date:** after a substantive hearing, the reference gap for the next purpose. After a failure, the gap for its reason: process 21 days or when it is due back, absence 7, not ready 10.
+3. **Priority score.** Every case gets a Samay score from 0 to 100 on its own details only: case age 35 points (full at 8 years, computed once per roster as mean plus two standard deviations), hearing readiness 25 (the type's real progress rate, reduced by at most 30 percent for absent required people), disposal proximity 15 (position in the 11 stages), hearing churn 15 (hearings held against the median expected by that stage), court-set urgency 10 ("last chance", "for judgment"). Rules beside the score, never in it: Conditional status when a summons or warrant is out, the liberty lane for bail, 4+ and 5+ year flags, age weight never below 20 percent. Full specification with worked examples: `docs/PRIORITY_SCORE.md`; code: `core/priority.py`.
+4. **Optimiser.** CP-SAT knapsack per sitting. Value = Samay score x P(substantive) x minutes^0.75, so the ratio per minute favours likely, short hearings without starving long arguments and judgments. Capacity is 95% of the net minutes, with a same-day waitlist. Bail goes first; the ageing quota is locked.
+5. **Next date:** after a substantive hearing, the reference gap for the next purpose. After a failure, the gap for its reason: process 21 days or when it is due back, absence 7, not ready 10.
 
-**The full product** (`app.py`, Streamlit) adds a multi-day planner. Stage 1 picks the day for every case across three courts with CP-SAT or MILP. Stage 2 sets exact times with CP-SAT interval scheduling: no advocate is due in two courtrooms at once, with travel time between them, and changeovers are sequence-dependent. It also has a pre-filing defect check with dummy filings, a judge dashboard with an override impact meter, a court master screen with one-tap outcomes and next dates, a calendar, and model-accuracy pages. The page "On the organisers' data" runs everything in this submission.
+**Nothing here runs on dummy data.** Every screen, number and rule uses your six files: the 100 real cases (scaled with your generator when a full docket is needed), your hearing-type table, your substantiveness and failure-reason rates, your calendar and your sample cause list. An earlier High Court version on synthetic data was removed from the product and is not part of this submission.
 
 **Key decisions:**
 - **Calibrate to your rates.** The baseline must reproduce your substantive rates before any claim about improvement means anything.
@@ -61,15 +64,16 @@ List only the hearings that will actually happen and move the case forward, pack
   - Costs: changeovers, the adjournment call.
   - Judge overrides: in the app, the impact meter shows the change in utilisation, predictability and 5+ year cases before approval.
 - **L3:**
-  - Advocates and parties behave. They respond to fixed slots, bundling and confirmation by showing up more, and to short-notice waitlist calls by showing up less.
-  - Their absences and unreadiness feed back into the next date and the next day's plan.
-  - In the full app, 250 advocate agents of three types (diligent, busy, chronic adjourner) decide whether to confirm, prepare, file a cover sheet and appear. A busy advocate who confirmed and did not appear gets a costs warning and responds to it (`core/agents.py`, `core/simulate.py`).
+  - Parties and advocates behave. Their chance of appearing rises with a fixed slot and clustering (35 percent fewer absences), and falls when they are called at short notice from the waitlist. The T-2 confirmation changes what gets listed, and an unready party's answer keeps the case off the list.
+  - The court responds to the case's history: the 1st, 2nd and deferred listings of a purpose are treated differently, and a deferred case is held until its last failure is cured.
+  - Their decisions feed back: each outcome sets the next date and the next day's plan, and a leave day moves the whole list.
+  - The lever strengths are assumptions, stated in `config/pucar.yaml` and tested by switching each lever off.
 
 ## 5. Results
 
 **A. The judge's full docket, 60 working days.** 3,000 cases (your generator, seed 42) from 1 Oct 2026, 330 court minutes a day, averaged over 5 seeds (`outputs/results.md`):
 
-| Metric (case study) | Today's rules | Ready-to-List |
+| Metric (case study) | Today's rules | Samay |
 |---|---|---|
 | Utilisation: court minutes used | 99.3% | 99.6% |
 | Reach rate: scheduled cases the court gets to | 44% | 97% |
@@ -81,13 +85,13 @@ List only the hearings that will actually happen and move the case forward, pack
 | Cases disposed in 60 days | 191 | 368 (+93%) |
 | Wasted listings (trips for nothing) | 2,851 | 220 (-92%) |
 
-With your 420-minute day (`outputs/capacity_420/`), today against Ready-to-List: 15.9 against 19.2 substantive hearings a day, 235 against 486 disposed.
+With your 420-minute day (`outputs/capacity_420/`), today against Samay: 15.9 against 19.2 substantive hearings a day, 235 against 486 disposed.
 
 **Which lever does what** (one switched off at a time, and the halves alone):
 
 | Configuration | Substantive a day | Moves the case | Wasted listings | Disposed |
 |---|---|---|---|---|
-| Ready-to-List, everything on | 14.6 | 82% | 220 | 368 |
+| Samay, everything on | 14.6 | 82% | 220 | 368 |
 | Scheduling only: registry packing and next dates, no party input | 13.5 | 66% | 464 | 343 |
 | Scheduling only + fixed slots and clustering | 13.9 | 73% | 360 | 358 |
 | Readiness levers only (no optimiser) | 13.8 | 64% | 2,768 | 152 |
@@ -98,7 +102,7 @@ Scheduling alone, which needs only the registry's own data, delivers most of the
 
 **B. One judge for a year, the 100 real cases inside it, new complaints arriving** (`outputs/one_judge_year.md`, 250 working days, 3 seeds, about 2.5 new complaints a day). This is where pre-filing shows: 96 of your 100 cases went through Delay Condonation hearings (3.37 hearings per case, 29% substantive). When the registry computes limitation at e-filing and the condonation petition is heard with admission, new complaints stop stalling there.
 
-| Over a year | Today's rules | Scheduling only | Scheduling + pre-filing | Ready-to-List (all) |
+| Over a year | Today's rules | Scheduling only | Scheduling + pre-filing | Samay (all) |
 |---|---|---|---|---|
 | Cases disposed | 524 | 639 | 639 | 864 |
 | Of the 100 real cases | 16 | 21 | 21 | 29 |
@@ -107,7 +111,17 @@ Scheduling alone, which needs only the registry's own data, delivers most of the
 | Substantive hearings a day | 12.6 | 14.1 | 14.1 | 15.0 |
 | Wasted listings | 11,851 | 3,216 | 3,116 | 1,597 |
 
-**Start here** (the app's first page): upload the docket file from this repo (`data/roster_sample_100.csv`, or the same columns as an Excel sheet). The app checks the columns and explains any problem in plain words. It then shows what is in the docket, reads each case's readiness from its last hearing note, plans the next week to year with time windows, and compares the results with today's rules. The pitch deck is `docs/presentation.html`: open it in a browser and use the arrow keys.
+**The prototype** (`app.py`): sign in as Judge or Court master; nothing else in the sidebar. The court master uploads the judge's docket (Excel or CSV; `docs/Samay_docket_Justice_Sehgal.xlsx` is your 100-case roster as a sheet), runs the day by recording each outcome, and scrutinises new complaints at e-filing. The judge sees Today's list (time, listing number, score, advocate, why today; remove; approve), Docket (every case with score, status, flags and history), Priority (the five weights, adjustable with age never below 20), Calendar (holidays, leave, load), Results (the five measures against today's rules, success by listing number), and How Samay decides (the model, the score and the day-building steps). Pages are fixed to the screen; tables scroll in their own frames.
+
+**Listing number.** The data shows the same purpose is listed many times (Warrant 5.0 hearings per case, Evidence complainant 6.8). The prototype tracks how many times a case has been listed for its current purpose: a 1st listing is planned normally; a 2nd listing carries a priority boost and a readiness check; a deferred case (3rd or later) is held until the reason for its last failure is cured (a warrant not back is never relisted blind), then listed with priority and a fixed slot. In the quarter run, deferred cases moved forward 45% of the time under Samay, against 24% for second listings under today's rules. Rules in `config/pucar.yaml` under `escalation`.
+
+**Calendar.** Your `court_calendar.csv` is used as given for the scored runs. One finding for you: its holiday names ("Janmashtami (Shravan Vad-8)", Samvatsari, Vikram Samvat New Year) are Gujarat's General Administration Department naming and match the Gujarat Gazette list for 2026, not Kerala's. For the Kerala demo court we also loaded the official High Court of Kerala 2026 calendar (210 sitting days; Sep to Dec holidays: 4 Sep, 21 Sep, 2 Oct, 20 and 21 Oct, 25 Dec; HC non-sitting 19 Oct and 9 Nov; Christmas vacation 24 to 31 Dec; second Saturdays closed) in `config/calendar.yaml`, with the source URL. Note 5 of that calendar says vacations apply to the High Court and civil courts; magistrate courts, where these cheque cases sit, keep sitting.
+
+**Statutory clock.** NI Act s.143(3) asks the court to conclude the trial within six months of filing, with day-to-day hearings under s.143(2). Cases past 180 days get a priority boost (`config/pucar.yaml`, `statutory_clock`).
+
+**Judge leave.** Leave days come from the leave register (`config/pucar.yaml`, `judge_leave`; Kerala Service Rules allow at most 20 casual leave days a year). On a leave day nothing sits. Under today's rules the day's cases take the flat 60-day gap; under Samay they move to the next sitting day with room.
+
+**Upload a docket** (second page): upload the docket file from this repo (`data/roster_sample_100.csv`, or the same columns as an Excel sheet). The app checks the columns and explains any problem in plain words. It then shows what is in the docket, reads each case's readiness from its last hearing note, plans the next week to year with time windows, and compares the results with today's rules. The pitch deck is `docs/presentation.html`: open it in a browser and use the arrow keys.
 
 **Visualisation and workflow** (Streamlit app, page "Justice Sehgal's docket"):
 - **The data:** every file and column, with the key findings (`docs/DATA_PROFILE.md`).
@@ -116,20 +130,19 @@ Scheduling alone, which needs only the registry's own data, delivers most of the
 - **Case file:** each of the 100 real cases, with hearings held per stage, the last note and the signals read from it, and its simulated next year under both approaches.
 - **Plan by day, week, month or year:** the cause list with time windows; the week board by hearing type; the month's listed and moved hearings; the year's cumulative disposals and where pending cases stand.
 
-**Against the default.** "Whatever is listed gets attempted, 60-day gap" lists 60 a day and reaches 44% of them. Ready-to-List lists about 18, reaches 97%, and hears more of them substantively.
+**Against the default.** "Whatever is listed gets attempted, 60-day gap" lists 60 a day and reaches 44% of them. Samay lists about 18, reaches 97%, and hears more of them substantively.
 
 ## 6. Specs for integration
 
 - **Input schema:** exactly your CSVs, unchanged. `core/pucar_engine.load(data_dir, roster=...)` reads them. The hearing-type names from your files are normalised to upper case with underscores.
 - **Output:** `outputs/proposed_schedule.csv` with columns `date, block, expected_start, window, case_number, hearing_type, advocate_id, from_waitlist, p_substantive_planned, simulated_outcome`, plus `results.csv` and `daily.csv`. `simulated_outcome` exists only in simulation; drop it in production.
-- **Scaling to every court and judge:** the unit is one judge's docket. `judge_docket()` builds it, `simulate()` plans it, and each court's rules (sitting blocks, hearing-type flow, priorities, registry checks) live in YAML (`config/pucar.yaml`, `config/registry_ni138.yaml`). Another bench is another docket and config, with no code change. Advocates shared across benches are handled by the multi-court planner in `core/optimize.py`, which never lists one advocate in two courtrooms at once.
-- **Interfaces:** a Python module (`core/pucar_engine.py`), a CLI (`scripts/run_pucar.py`) and a Streamlit app (`app.py`). A DRISTI integration would call `simulate` or the day planner nightly and write the cause list plus a reason per item.
-- **Dependencies:** Python 3.11+, pandas, numpy, OR-Tools (CP-SAT, SCIP), scikit-learn, PyYAML, Streamlit, Plotly, PyMuPDF, tabulate. No external services and no LLM calls.
+- **Scaling to every court and judge:** the unit is one judge's docket. `judge_docket()` builds it, `simulate()` plans it, and each court's rules (sitting blocks, hearing-type flow, priorities, registry checks) live in YAML (`config/pucar.yaml`, `config/registry_ni138.yaml`). Another bench is another docket and config, with no code change. Advocates shared across benches would be handled by a court-wide planning step that never lists one advocate in two courtrooms at once; that is the first thing to add when a second bench comes on.
+- **Interfaces:** a Python module (`core/pucar_engine.py`, `core/registry.py`), two CLIs (`scripts/run_pucar.py`, `scripts/run_one_judge.py`) and a Streamlit app (`app.py`). `docs/HOW_IT_WORKS.md` describes the decision, the data, the lifecycle, the model, the optimiser step by step, the calendar, the screens, a production backend with API endpoints, and a stage-by-stage table of every feature.
+- **Dependencies:** Python 3.11+, pandas, numpy, OR-Tools (CP-SAT), PyYAML, Streamlit, Plotly, openpyxl, tabulate. No external services and no machine learning trained on this data: the model is your measured rates per hearing type, adjusted per case by signals in the last order, with a CP-SAT solver on top.
 - **Stubbed vs real:**
-  - Real: the optimiser, next-date logic, calibration to your data, the ablation and the app.
-  - Assumptions: lever strengths and process-return times, in config.
-  - Stubbed: the LLM case summary (a cached text).
-  - Simulated: process status. In production it would come from the summons/warrant tracking in DRISTI.
+  - Real: the optimiser, the next-date rules, the listing-number rule, judge leave, the registry timeline computation, the calibration to your rates, the ablation, the four screens and the upload flow.
+  - Assumptions in config: lever strengths, process-return times, demo leave dates.
+  - Simulated: process-return status, confirmations and outcomes. In production they come from DRISTI and the court master.
 - **What integration would take:**
   1. Feed process-return status and advocate confirmations from DRISTI.
   2. Map DRISTI hearing purposes to the 14 types.
@@ -142,14 +155,14 @@ Scheduling alone, which needs only the registry's own data, delivers most of the
 cd submissions/ready-to-list
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+# The app: sign in as Court master, upload docs/Samay_docket_Justice_Sehgal.xlsx, then sign in as Judge
+.venv/bin/streamlit run app.py
 # Score on your data (3,000 cases, 60 days, 330-minute day; add --capacity 420 for the README's day)
 .venv/bin/python -m scripts.run_pucar --out outputs
 # One judge for a year: the 100 real cases inside the docket, new complaints arriving, with and without pre-filing
 .venv/bin/python -m scripts.run_one_judge --out outputs
 # Profile every data file and column
 .venv/bin/python -m scripts.data_profile
-# The full app: start at 'Start here: plan a docket' and upload data/roster_sample_100.csv
-.venv/bin/streamlit run app.py
 ```
 
 ## 8. What we'd build next
