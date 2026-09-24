@@ -89,12 +89,13 @@ With your 420-minute day (`outputs/capacity_420/`): 12.9 against 16.9 substantiv
 |---|---|---|---|
 | Ready-to-List, everything on | 14.0 | 69% | 392 |
 | Readiness levers only (no optimiser) | 12.0 | 46% | 2,450 |
-| Optimiser only (no readiness levers) | 12.4 | 53% | 678 |
+| Scheduling only: registry packing and next dates, no party input | 12.4 | 53% | 678 |
+| Scheduling only + fixed slots and clustering | 13.1 | 61% | 525 |
 | Without fixed slot and clustering | 13.3 | 61% | 520 |
 | Without reading the last hearing's note | 13.5 | 67% | 420 |
 | Without process tracking | 13.6 | 68% | 412 |
 
-The two halves are complementary: neither alone gets past 12.4 a day, together they reach 14.0. There is no pre-filing check in this district-court data, so readiness is established differently: from the process status, the intent check and the last hearing's note. Those do the job a pre-filing check does in a High Court filing.
+Scheduling alone, which needs only the registry's own data, delivers about three quarters of the gain (12.4 to 13.1 a day, the same disposals). Readiness information takes it to 14.0. There is no pre-filing check in this district-court data, so readiness is established differently: from the process status, the intent check and the last hearing's note. Those do the job a pre-filing check does in a High Court filing.
 
 **Visualisation.** The judge sees the day as a timeline by sitting, with the reason each case was listed. Adding or removing a case shows the impact before approval. The docket-health tab shows ageing buckets, repeat adjournments and a 4-week load forecast. The page "On the organisers' data" shows the lever chart, day-by-day series, the proposed cause list, and why hearings fail per type from your data. The decision it supports: whether to list a case today or wait for its process, and what an override costs.
 
